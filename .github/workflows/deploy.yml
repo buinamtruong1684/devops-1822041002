@@ -1,0 +1,61 @@
+
+name: Website CI CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check Website Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Check required files
+        run: |
+          test -f index.html || exit 1
+          test -f style.css || exit 1
+          test -f script.js || exit 1
+          echo "All required files exist!"
+
+      - name: Check HTML title
+        run: |
+          grep -Eiq '<title([[:space:]>])' index.html
+          echo "HTML title exists!"
+
+  deploy:
+    name: Deploy Website
+    runs-on: ubuntu-latest
+    needs: check
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
